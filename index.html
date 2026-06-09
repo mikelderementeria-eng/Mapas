@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Mapas Electorales · Valparaíso</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0e1117;--bg2:#161b24;--bg3:#1d2433;--border:#2a3548;--border2:#3a4a63;--text1:#e8edf5;--text2:#a8b8d0;--text3:#6a7f9a;--accent:#3dd68c}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text1);min-height:100vh;display:flex;flex-direction:column}
+header{padding:48px 40px 0;max-width:900px;margin:0 auto;width:100%}
+.pretitle{font-size:10px;color:var(--accent);letter-spacing:.22em;text-transform:uppercase;margin-bottom:12px}
+h1{font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,48px);font-weight:800;line-height:1.05;color:var(--text1)}
+h1 span{color:var(--accent)}
+.subtitle{font-size:13px;color:var(--text3);margin-top:14px;line-height:1.8;max-width:560px}
+.sources{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.src{font-size:9px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:3px 9px;letter-spacing:.06em}
+.divider{width:48px;height:2px;background:var(--accent);border-radius:1px;margin:36px 0}
+main{flex:1;padding:0 40px 64px;max-width:900px;margin:0 auto;width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden;text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:border-color .2s,transform .15s}
+.card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.card-top{padding:24px 24px 0;flex:1}
+.card-badge{font-size:8px;color:var(--accent);letter-spacing:.2em;text-transform:uppercase;margin-bottom:10px}
+.card-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;line-height:1.2;color:var(--text1);margin-bottom:8px}
+.card-desc{font-size:11px;color:var(--text3);line-height:1.8;margin-bottom:16px}
+.card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px}
+.tag{font-size:8px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:2px 7px;letter-spacing:.04em}
+.card-footer{border-top:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+.card-cta{font-size:10px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+.card-arrow{font-size:16px;color:var(--border2);transition:color .15s}
+.card:hover .card-arrow{color:var(--accent)}
+.card-strip{height:3px}
+footer{border-top:1px solid var(--border);padding:20px 40px;max-width:900px;margin:0 auto;width:100%;display:flex;align-items:center;justify-content:space-between;flex-wrap:gap}
+.footer-text{font-size:9px;color:var(--text3);line-height:1.8}
+.footer-logo{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--text3);letter-spacing:.1em}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="pretitle">Unión Comunal · Valparaíso</div>
+  <h1>Mapas<br>Electorales<br><span>Valparaíso</span></h1>
+  <p class="subtitle">Visualización interactiva del territorio electoral de Valparaíso. Cruza datos del Censo 2024 con los resultados de las elecciones de noviembre 2025 por unidad vecinal y área de votación.</p>
+  <div class="sources">
+    <span class="src">Censo 2024 · INE</span>
+    <span class="src">Elecciones Nov 2025 · Servel</span>
+    <span class="src">Dist. 7 Diputados</span>
+    <span class="src">6ª Circ. Senatorial</span>
+    <span class="src">210 UVs · 50 áreas · 61 locales</span>
+  </div>
+  <div class="divider"></div>
+</header>
+
+<main>
+  <div class="grid">
+
+    <!-- MAPA 1 -->
+    <a class="card" href="valparaiso_perfil_completo.html">
+      <div class="card-strip" style="background:linear-gradient(90deg,#3dd68c,#4a9eff,#ef4444)"></div>
+      <div class="card-top">
+        <div class="card-badge">210 Unidades Vecinales</div>
+        <div class="card-title">Perfil Completo por UV</div>
+        <div class="card-desc">Mapa base con las 210 unidades vecinales de Valparaíso. Incluye capas electorales, sociodemográficas del Censo 2024, mapas de calor de Cuello y Cariola, y overlay de áreas por local.</div>
+        <div class="card-tags">
+          <span class="tag">Electoral</span>
+          <span class="tag">Social · Censo</span>
+          <span class="tag">Cuello · Cariola</span>
+          <span class="tag">Áreas por local</span>
+          <span class="tag">Perfil UV</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="card-cta">Abrir mapa</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- MAPA 2 -->
+    <a class="card" href="valparaiso_areas_perfil.html">
+      <div class="card-strip" style="background:linear-gradient(90deg,#e63946,#f4a261,#2a9d8f,#457b9d,#c77dff)"></div>
+      <div class="card-top">
+        <div class="card-badge">50 Áreas por Local de Votación</div>
+        <div class="card-title">Perfil Área Electoral + Votante</div>
+        <div class="card-desc">Mapa con 50 áreas disueltas por local de votación, cada una con su color de identidad. Incluye ficha del votante promedio y moda, perfil electoral y perfil social del Censo 2024.</div>
+        <div class="card-tags">
+          <span class="tag">50 colores fijos</span>
+          <span class="tag">Votante promedio</span>
+          <span class="tag">Votante moda</span>
+          <span class="tag">Tendencia política</span>
+          <span class="tag">Social · Censo</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="card-cta">Abrir mapa</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-text">
+    Datos: INE Censo 2024 · Servel Elecciones Nov 2025<br>
+    Geometrías: Unidades Vecinales Valparaíso
+  </div>
+  <div class="footer-logo">UNCO · VPO</div>
+</footer>
+
+</body>
+</html>
