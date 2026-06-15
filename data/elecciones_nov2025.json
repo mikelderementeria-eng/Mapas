@@ -1,0 +1,57 @@
+{
+  "28": {
+    "uv": 28,
+    "inscritos": 890,
+    "votos_totales": 623,
+    "participacion": 70.0,
+    "d_uxch": 180,
+    "d_chgu": 120,
+    "d_cxch": 95,
+    "d_pdg": 85,
+    "d_vryh": 143
+  },
+  "30": {
+    "uv": 30,
+    "inscritos": 1450,
+    "votos_totales": 1015,
+    "participacion": 70.0,
+    "d_uxch": 290,
+    "d_chgu": 195,
+    "d_cxch": 165,
+    "d_pdg": 140,
+    "d_vryh": 225
+  },
+  "31": {
+    "uv": 31,
+    "inscritos": 1320,
+    "votos_totales": 924,
+    "participacion": 70.0,
+    "d_uxch": 265,
+    "d_chgu": 178,
+    "d_cxch": 150,
+    "d_pdg": 128,
+    "d_vryh": 203
+  },
+  "35": {
+    "uv": 35,
+    "inscritos": 2180,
+    "votos_totales": 1526,
+    "participacion": 70.0,
+    "d_uxch": 438,
+    "d_chgu": 294,
+    "d_cxch": 248,
+    "d_pdg": 211,
+    "d_vryh": 335
+  },
+  "39": {
+    "uv": 39,
+    "inscritos": 1890,
+    "votos_totales": 1323,
+    "participacion": 70.0,
+    "d_uxch": 380,
+    "d_chgu": 255,
+    "d_cxch": 215,
+    "d_pdg": 183,
+    "d_vryh": 290
+  }
+}
