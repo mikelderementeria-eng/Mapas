@@ -1,0 +1,37 @@
+{
+  "28": {
+    "uv": 28,
+    "nombre": "Cerro Concepción",
+    "poblacion": 1250,
+    "viviendas": 480,
+    "edad_promedio": 42.5
+  },
+  "30": {
+    "uv": 30,
+    "nombre": "Quebrada Verde",
+    "poblacion": 2100,
+    "viviendas": 620,
+    "edad_promedio": 35.2
+  },
+  "31": {
+    "uv": 31,
+    "nombre": "Valencia Sur",
+    "poblacion": 1890,
+    "viviendas": 550,
+    "edad_promedio": 38.7
+  },
+  "35": {
+    "uv": 35,
+    "nombre": "Cerro Toro",
+    "poblacion": 3200,
+    "viviendas": 890,
+    "edad_promedio": 33.1
+  },
+  "39": {
+    "uv": 39,
+    "nombre": "Porvenir Alto",
+    "poblacion": 2750,
+    "viviendas": 720,
+    "edad_promedio": 36.4
+  }
+}
