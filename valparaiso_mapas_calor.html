@@ -217,11 +217,11 @@ function initMap() {
 // Cargar datos desde JSON
 async function cargarDatos() {
   try {
-    // Cargar datos electorales
-    const response = await fetch('data/datos_completos.json');
+    // Cargar datos electorales de candidatos
+    const response = await fetch('data/datos_candidatos.json');
     uvData = await response.json();
     
-    // Cargar GeoJSON con geometrías desde el perfil completo
+    // Cargar GeoJSON con geometrías
     const geoResponse = await fetch('data/uv_valparaiso.geojson');
     geojsonUVs = await geoResponse.json();
     
@@ -230,10 +230,7 @@ async function cargarDatos() {
     updateLegend();
   } catch (error) {
     console.error('Error cargando datos:', error);
-    // Fallback: intentar sin GeoJSON externo
-    renderUVLayer();
-    renderUVList();
-    updateLegend();
+    document.getElementById('panel-body').innerHTML = '<div class="no-data">Error cargando datos. Verifica que existan los archivos data/datos_candidatos.json y data/uv_valparaiso.geojson</div>';
   }
 }
 
@@ -258,9 +255,8 @@ function renderUVLayerFromGeoJSON(geojson, campo, candConfig) {
     style: feature => {
       const uvId = feature.properties.UV || feature.properties.uv || feature.properties.id;
       const uv = uvData[uvId.toString()] || {};
-      const valor = uv[campo] || 0;
-      const votosTotales = uv.votos_totales || 1;
-      const pct = valor > 0 ? (valor / votosTotales) * 100 : 0;
+      // Los datos ya vienen en porcentaje (0-15), usar directamente
+      const pct = uv[campo] || 0;
       
       return {
         fillColor: candConfig.color,
@@ -272,9 +268,11 @@ function renderUVLayerFromGeoJSON(geojson, campo, candConfig) {
     onEachFeature: (feature, layer) => {
       const uvId = feature.properties.UV || feature.properties.uv || feature.properties.id;
       const uv = uvData[uvId.toString()] || {};
-      const valor = uv[campo] || 0;
+      // Los datos ya vienen en porcentaje
+      const pct = uv[campo] || 0;
       const votosTotales = uv.votos_totales || 1;
-      const pct = valor > 0 ? (valor / votosTotales) * 100 : 0;
+      // Calcular votos absolutos desde el porcentaje
+      const votosCand = votosTotales > 0 ? Math.round((pct / 100) * votosTotales) : 0;
       const nombre = feature.properties.Nombre || feature.properties.nombre || `UV ${uvId}`;
       
       layer.on('click', () => {
@@ -283,7 +281,7 @@ function renderUVLayerFromGeoJSON(geojson, campo, candConfig) {
             uv: parseInt(uvId),
             nombre: nombre,
             pct: pct,
-            votos: valor,
+            votos: votosCand,
             votos_totales: votosTotales,
             inscritos: uv.inscritos || 0
           }
@@ -303,14 +301,12 @@ function renderUVLayerFallback(campo, candConfig) {
   
   Object.keys(uvData).forEach(uvId => {
     const uv = uvData[uvId];
-    const valor = uv[campo] || 0;
+    // Los datos ya vienen en porcentaje (0-15)
+    const pct = uv[campo] || 0;
     const inscritos = uv.inscritos || 0;
     const votosTotales = uv.votos_totales || 0;
-    
-    let pct = 0;
-    if (votosTotales > 0 && valor > 0) {
-      pct = (valor / votosTotales) * 100;
-    }
+    // Calcular votos absolutos desde el porcentaje
+    const votosCand = votosTotales > 0 ? Math.round((pct / 100) * votosTotales) : 0;
     
     const numId = parseInt(uvId);
     geojsonFeatures.push({
@@ -319,7 +315,7 @@ function renderUVLayerFallback(campo, candConfig) {
         uv: numId,
         nombre: uv.nombre || `UV ${uvId}`,
         pct: pct,
-        votos: valor,
+        votos: votosCand,
         votos_totales: votosTotales,
         inscritos: inscritos
       },
@@ -374,14 +370,14 @@ function setCandidato(cand) {
   const candConfig = CANDIDATOS[cand];
   document.getElementById('p-cand-badge').textContent = candConfig.nombre;
   
-  // Re-renderizar capa
+  // Re-renderizar capa y lista
   renderUVLayer();
+  renderUVList();
   updateLegend();
   
-  // Si hay UV seleccionada, actualizar panel
-  if (selectedUV) {
-    showUVDetail(selectedUV);
-  }
+  // Resetear selección
+  selectedUV = null;
+  document.getElementById('panel-body').innerHTML = '<div class="no-data">Haz clic en una unidad vecinal para ver el detalle de votos</div>';
 }
 
 // Seleccionar UV
@@ -417,10 +413,6 @@ function showUVDetail(feature) {
   const inscritos = uvRaw.inscritos || 0;
   const participacion = votosTotales > 0 && inscritos > 0 ? (votosTotales / inscritos) * 100 : 0;
   
-  // Top otros candidatos
-  const dip_c = uvRaw.dip_c || [];
-  const topCands = dip_c.slice(0, 5);
-  
   let html = `
     <div class="section-title">Votos ${candConfig.nombre}</div>
     <div class="stat-grid">
@@ -438,21 +430,18 @@ function showUVDetail(feature) {
       </div>
     </div>
     
-    <div class="section-title">Top 5 Candidatos en esta UV</div>
-  `;
-  
-  topCands.forEach(c => {
-    const maxPct = Math.max(...topCands.map(x => x.pct));
-    const width = (c.pct / maxPct) * 100;
-    html += `
-      <div class="elec-bar-row">
-        <div class="elec-dot" style="background:${candConfig.color}"></div>
-        <div class="elec-name">${c.n}</div>
-        <div class="elec-track"><div class="elec-fill" style="width:${width}%;background:${candConfig.color}"></div></div>
-        <div class="elec-pct">${c.pct}%</div>
+    <div class="section-title">Información UV</div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Inscritos</div>
+        <div class="stat-value sm">${inscritos.toLocaleString()}</div>
       </div>
-    `;
-  });
+      <div class="stat-card">
+        <div class="stat-label">Votos totales</div>
+        <div class="stat-value sm">${votosTotales.toLocaleString()}</div>
+      </div>
+    </div>
+  `;
   
   document.getElementById('panel-body').innerHTML = html;
 }
@@ -463,16 +452,14 @@ function renderUVList() {
   const candConfig = CANDIDATOS[currentCandidato];
   const candField = candConfig.campo;
   
-  // Ordenar por votos del candidato
+  // Ordenar por porcentaje del candidato (los datos ya vienen en %)
   const sorted = Object.entries(uvData)
     .map(([id, data]) => ({id, ...data}))
     .sort((a, b) => (b[candField] || 0) - (a[candField] || 0));
   
   let html = '';
   sorted.forEach(uv => {
-    const votos = uv[candField] || 0;
-    const votosTotales = uv.votos_totales || 1;
-    const pct = votos > 0 ? (votos / votosTotales) * 100 : 0;
+    const pct = uv[candField] || 0;
     html += `
       <div class="uv-item" data-uv="${uv.id}" onclick="selectUVById(${uv.id})">
         <div class="uv-num">${uv.id}</div>
