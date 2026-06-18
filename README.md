@@ -134,6 +134,3 @@ python scripts/process_data.py \
 Proyecto de uso interno · 
 ---
 
-**Datos**: INE Censo 2024 · Servel Elecciones Nov 2025  
-**Geometrías**: Unidades Vecinales Valparaíso  
-**Desarrollo**: UNCO · VPO
