@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Mapas de Calor · Candidatos Diputados Valparaíso</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e1117;--bg2:#161b24;--bg3:#1d2433;--bg4:#242d3e;
+  --border:#2a3548;--border2:#3a4a63;
+  --text1:#e8edf5;--text2:#a8b8d0;--text3:#6a7f9a;
+  --accent:#3dd68c;--accent2:#2ab57a;--accent3:rgba(61,214,140,.12);
+  --cuello:#ef4444;--sharp:#22c55e;--brito:#ef4444;--valenzuela:#eab308;
+  --panel-w:320px;
+}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text1);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 18px;height:48px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+.hdr-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.hdr-sub{font-size:10px;color:var(--text3);letter-spacing:.06em}
+.hdr-divider{width:1px;height:18px;background:var(--border2)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn-hdr{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:5px 11px;cursor:pointer;transition:all .15s;letter-spacing:.04em;text-transform:uppercase}
+.btn-hdr:hover{background:var(--bg4);color:var(--text1);border-color:var(--border2)}
+.btn-hdr.on{background:var(--accent3);color:var(--accent);border-color:var(--accent2)}
+.main{display:flex;flex:1;overflow:hidden}
+#map{flex:1;position:relative}
+
+/* ── PANEL CANDIDATOS ────────────────────────────────── */
+.cand-panel{position:absolute;top:12px;right:14px;z-index:400;width:220px;background:rgba(14,17,23,.95);border:1px solid var(--border2);border-radius:5px;backdrop-filter:blur(8px);overflow:hidden}
+.cp-title{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;padding:10px 12px;border-bottom:1px solid var(--border)}
+.cp-cand{display:block;width:100%;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);background:none;border:none;border-left:3px solid transparent;padding:8px 12px;cursor:pointer;transition:all .12s;letter-spacing:.03em}
+.cp-cand:hover{background:rgba(255,255,255,.04);color:var(--text2)}
+.cp-cand.on{color:var(--text1);background:rgba(255,255,255,.06)}
+.cp-cand .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.cp-cand .name{font-weight:600}
+.cp-cand .party{font-size:8px;color:var(--text3);display:block;margin-top:2px}
+
+/* ── LEYENDA ─────────────────────────────────────── */
+.map-legend{position:absolute;bottom:32px;left:16px;z-index:400;background:rgba(14,17,23,.92);border:1px solid var(--border2);border-radius:4px;padding:11px 13px;min-width:200px;backdrop-filter:blur(8px);display:none}
+.legend-title{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px}
+.legend-gradient{height:8px;border-radius:2px;margin-bottom:3px}
+.legend-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3)}
+.legend-info{font-size:9px;color:var(--text3);margin-top:5px;line-height:1.4}
+
+/* ── PANEL DERECHO ──────────────────────────────── */
+.panel{width:var(--panel-w);background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:width .2s ease;position:relative;min-height:0}
+.panel.collapsed{width:0;border-left:none}
+.panel-toggle{position:absolute;top:50%;left:-13px;transform:translateY(-50%);z-index:450;width:13px;height:40px;background:var(--bg3);border:1px solid var(--border2);border-right:none;border-radius:3px 0 0 3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:9px;transition:background .15s}
+.panel-toggle:hover{background:var(--bg4);color:var(--text1)}
+.panel-head{background:var(--bg3);border-bottom:1px solid var(--border);padding:14px 16px 12px;flex-shrink:0}
+.panel-uv-label{font-size:8px;color:var(--text3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.panel-uv-num{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent);line-height:1}
+.panel-uv-name{font-size:11px;color:var(--text2);margin-top:2px;font-weight:500}
+.panel-cand-badge{font-size:8px;color:var(--accent);background:var(--bg4);border:1px solid var(--border);border-radius:2px;padding:2px 7px;margin-top:6px;display:inline-block}
+.panel-body{flex:1;overflow-y:auto;padding:14px 14px 20px;min-height:0}
+.panel-body::-webkit-scrollbar{width:4px}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.section-title{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:10px;margin-top:14px}
+.section-title:first-child{margin-top:0}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:8px 10px}
+.stat-card.wide{grid-column:1/-1}
+.stat-label{font-size:8px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.stat-value{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text1);line-height:1}
+.stat-value.sm{font-size:13px}
+.stat-unit{font-size:9px;color:var(--text3);margin-left:2px}
+
+.elec-bar-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.elec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.elec-name{font-size:9px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.elec-track{width:80px;height:5px;background:var(--bg4);border-radius:2px;overflow:hidden;flex-shrink:0}
+.elec-fill{height:100%;border-radius:2px;transition:width .45s ease}
+.elec-pct{font-size:9px;color:var(--text2);width:28px;text-align:right;flex-shrink:0;font-weight:500}
+
+.uv-list-container{flex:1;overflow-y:auto}
+.uv-list-container::-webkit-scrollbar{width:4px}
+.uv-list-container::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.uv-search{padding:10px 12px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0}
+.uv-search input{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:2px;padding:6px 9px;color:var(--text1);font-family:'IBM Plex Mono',monospace;font-size:10px;outline:none;transition:border .15s}
+.uv-search input:focus{border-color:var(--accent2)}
+.uv-item{padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;display:flex;align-items:center;gap:8px}
+.uv-item:hover{background:var(--bg3)}
+.uv-item.active{background:rgba(61,214,140,.07);border-left:2px solid var(--accent)}
+.uv-num{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--accent);min-width:32px;flex-shrink:0}
+.uv-name{font-size:10px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uv-pct{font-size:9px;color:var(--text3);flex-shrink:0;font-weight:500}
+.no-data{padding:24px 16px;text-align:center;font-size:11px;color:var(--text3);line-height:1.6}
+
+/* Colores candidatos */
+.cand-cuello{--cand-color:var(--cuello)}
+.cand-sharp{--cand-color:var(--sharp)}
+.cand-brito{--cand-color:var(--brito)}
+.cand-valenzuela{--cand-color:var(--valenzuela)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="hdr-title">Mapas de Calor · Candidatos</div>
+    <div class="hdr-sub">Luis Cuello · Jorge Sharp · Jorge Brito · Juan Manuel Valenzuela</div>
+  </div>
+  <div class="hdr-divider"></div>
+  <div class="hdr-right">
+    <button class="btn-hdr" id="btn-completo" onclick="window.location.href='valparaiso_perfil_completo.html'">← Mapa Completo</button>
+  </div>
+</header>
+
+<div class="main">
+  <div id="map">
+    
+    <!-- Panel Candidatos -->
+    <div class="cand-panel">
+      <div class="cp-title">Seleccionar Candidato</div>
+      <button class="cp-cand on" data-cand="cuello" onclick="setCandidato('cuello')">
+        <span class="dot" style="background:var(--cuello)"></span>
+        <span class="name">Luis Cuello</span>
+        <span class="party">PC · Unidad por Chile</span>
+      </button>
+      <button class="cp-cand" data-cand="sharp" onclick="setCandidato('sharp')">
+        <span class="dot" style="background:var(--sharp)"></span>
+        <span class="name">Jorge Sharp</span>
+        <span class="party">VRyH</span>
+      </button>
+      <button class="cp-cand" data-cand="brito" onclick="setCandidato('brito')">
+        <span class="dot" style="background:var(--brito)"></span>
+        <span class="name">Jorge Brito</span>
+        <span class="party">FA · Unidad por Chile</span>
+      </button>
+      <button class="cp-cand" data-cand="valenzuela" onclick="setCandidato('valenzuela')">
+        <span class="dot" style="background:var(--valenzuela)"></span>
+        <span class="name">Juan M. Valenzuela</span>
+        <span class="party">PDG</span>
+      </button>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="map-legend" id="legend">
+      <div class="legend-title">% Votos por UV</div>
+      <div class="legend-gradient" id="legend-gradient"></div>
+      <div class="legend-labels"><span>0%</span><span>15%</span></div>
+      <div class="legend-info" id="legend-info">Porcentaje de votos sobre total emitidos en la UV</div>
+    </div>
+
+  </div>
+
+  <!-- Panel Derecho -->
+  <div class="panel" id="panel">
+    <div class="panel-toggle" onclick="togglePanel()">◀</div>
+    <div class="panel-head">
+      <div class="panel-uv-label">Unidad Vecinal</div>
+      <div class="panel-uv-num" id="p-uv-num">—</div>
+      <div class="panel-uv-name" id="p-uv-name">Selecciona una UV</div>
+      <div class="panel-cand-badge" id="p-cand-badge">Luis Cuello</div>
+    </div>
+    <div class="panel-body" id="panel-body">
+      <div class="no-data">Haz clic en una unidad vecinal para ver el detalle de votos</div>
+    </div>
+    <div class="uv-search">
+      <input type="text" placeholder="Buscar UV por nombre o número..." id="uv-search" onkeyup="filterUVs()"/>
+    </div>
+    <div class="uv-list-container" id="uv-list"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// Configuración de candidatos
+const CANDIDATOS = {
+  cuello: { 
+    nombre: "Luis Cuello", 
+    partido: "PC · Unidad por Chile", 
+    color: "#ef4444",
+    campo: "dc_Cuello"
+  },
+  sharp: { 
+    nombre: "Jorge Sharp", 
+    partido: "VRyH", 
+    color: "#22c55e",
+    campo: "dc_Sharp"
+  },
+  brito: { 
+    nombre: "Jorge Brito", 
+    partido: "FA · Unidad por Chile", 
+    color: "#ef4444",
+    campo: "dc_Brito"
+  },
+  valenzuela: { 
+    nombre: "Juan M. Valenzuela", 
+    partido: "PDG", 
+    color: "#eab308",
+    campo: "dc_Valenzuela"
+  }
+};
+
+let map, uvLayer, currentCandidato = 'cuello';
+let uvData = {};
+let geojsonUVs = null;
+let selectedUV = null;
+
+// Inicializar mapa
+function initMap() {
+  map = L.map('map').setView([-33.035, -71.615], 13);
+  
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '©OpenStreetMap ©CartoDB',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  cargarDatos();
+}
+
+// Cargar datos desde JSON
+async function cargarDatos() {
+  try {
+    // Cargar datos electorales
+    const response = await fetch('data/datos_completos.json');
+    uvData = await response.json();
+    
+    // Cargar GeoJSON con geometrías desde el perfil completo
+    const geoResponse = await fetch('data/uv_valparaiso.geojson');
+    geojsonUVs = await geoResponse.json();
+    
+    renderUVLayer();
+    renderUVList();
+    updateLegend();
+  } catch (error) {
+    console.error('Error cargando datos:', error);
+    // Fallback: intentar sin GeoJSON externo
+    renderUVLayer();
+    renderUVList();
+    updateLegend();
+  }
+}
+
+// Renderizar capa de UVs
+function renderUVLayer() {
+  if (uvLayer) map.removeLayer(uvLayer);
+  
+  const candConfig = CANDIDATOS[currentCandidato];
+  const campo = candConfig.campo;
+  
+  // Si tenemos GeoJSON externo, usarlo
+  if (geojsonUVs && geojsonUVs.features && geojsonUVs.features.length > 0) {
+    renderUVLayerFromGeoJSON(geojsonUVs, campo, candConfig);
+  } else {
+    // Fallback: usar geometrías aproximadas
+    renderUVLayerFallback(campo, candConfig);
+  }
+}
+
+function renderUVLayerFromGeoJSON(geojson, campo, candConfig) {
+  uvLayer = L.geoJSON(geojson, {
+    style: feature => {
+      const uvId = feature.properties.UV || feature.properties.uv || feature.properties.id;
+      const uv = uvData[uvId.toString()] || {};
+      const valor = uv[campo] || 0;
+      const votosTotales = uv.votos_totales || 1;
+      const pct = valor > 0 ? (valor / votosTotales) * 100 : 0;
+      
+      return {
+        fillColor: candConfig.color,
+        color: '#2a3548',
+        weight: 1,
+        fillOpacity: Math.min(0.3 + (pct / 15) * 0.7, 0.95)
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      const uvId = feature.properties.UV || feature.properties.uv || feature.properties.id;
+      const uv = uvData[uvId.toString()] || {};
+      const valor = uv[campo] || 0;
+      const votosTotales = uv.votos_totales || 1;
+      const pct = valor > 0 ? (valor / votosTotales) * 100 : 0;
+      const nombre = feature.properties.Nombre || feature.properties.nombre || `UV ${uvId}`;
+      
+      layer.on('click', () => {
+        selectUV({
+          properties: {
+            uv: parseInt(uvId),
+            nombre: nombre,
+            pct: pct,
+            votos: valor,
+            votos_totales: votosTotales,
+            inscritos: uv.inscritos || 0
+          }
+        });
+      });
+      
+      layer.bindTooltip(`<b>${nombre}</b><br>${pct.toFixed(1)}%`, {
+        sticky: true,
+        direction: 'top'
+      });
+    }
+  }).addTo(map);
+}
+
+function renderUVLayerFallback(campo, candConfig) {
+  const geojsonFeatures = [];
+  
+  Object.keys(uvData).forEach(uvId => {
+    const uv = uvData[uvId];
+    const valor = uv[campo] || 0;
+    const inscritos = uv.inscritos || 0;
+    const votosTotales = uv.votos_totales || 0;
+    
+    let pct = 0;
+    if (votosTotales > 0 && valor > 0) {
+      pct = (valor / votosTotales) * 100;
+    }
+    
+    const numId = parseInt(uvId);
+    geojsonFeatures.push({
+      type: 'Feature',
+      properties: {
+        uv: numId,
+        nombre: uv.nombre || `UV ${uvId}`,
+        pct: pct,
+        votos: valor,
+        votos_totales: votosTotales,
+        inscritos: inscritos
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [-71.62 + (numId % 10) * 0.01, -33.03 + Math.floor(numId / 10) * 0.01],
+          [-71.62 + (numId % 10) * 0.01 + 0.005, -33.03 + Math.floor(numId / 10) * 0.01],
+          [-71.62 + (numId % 10) * 0.01 + 0.005, -33.03 + Math.floor(numId / 10) * 0.01 + 0.005],
+          [-71.62 + (numId % 10) * 0.01, -33.03 + Math.floor(numId / 10) * 0.01 + 0.005],
+          [-71.62 + (numId % 10) * 0.01, -33.03 + Math.floor(numId / 10) * 0.01]
+        ]]
+      }
+    });
+  });
+  
+  uvLayer = L.geoJSON({type: 'FeatureCollection', features: geojsonFeatures}, {
+    style: feature => ({
+      fillColor: candConfig.color,
+      color: '#2a3548',
+      weight: 1,
+      fillOpacity: Math.min(0.3 + (feature.properties.pct / 15) * 0.7, 0.95)
+    }),
+    onEachFeature: (feature, layer) => {
+      layer.on('click', () => selectUV(feature));
+      layer.bindTooltip(`<b>${feature.properties.nombre}</b><br>${feature.properties.pct.toFixed(1)}%`, {
+        sticky: true,
+        direction: 'top'
+      });
+    }
+  }).addTo(map);
+}
+
+// Actualizar leyenda
+function updateLegend() {
+  const candConfig = CANDIDATOS[currentCandidato];
+  const gradient = document.getElementById('legend-gradient');
+  gradient.style.background = `linear-gradient(90deg, ${candConfig.color}22 0%, ${candConfig.color} 100%)`;
+  document.getElementById('legend').style.display = 'block';
+}
+
+// Seleccionar candidato
+function setCandidato(cand) {
+  currentCandidato = cand;
+  
+  // Actualizar botones
+  document.querySelectorAll('.cp-cand').forEach(btn => {
+    btn.classList.toggle('on', btn.dataset.cand === cand);
+  });
+  
+  // Actualizar badge panel
+  const candConfig = CANDIDATOS[cand];
+  document.getElementById('p-cand-badge').textContent = candConfig.nombre;
+  
+  // Re-renderizar capa
+  renderUVLayer();
+  updateLegend();
+  
+  // Si hay UV seleccionada, actualizar panel
+  if (selectedUV) {
+    showUVDetail(selectedUV);
+  }
+}
+
+// Seleccionar UV
+function selectUV(feature) {
+  selectedUV = feature;
+  
+  // Highlight
+  if (uvLayer) {
+    uvLayer.eachLayer(layer => {
+      const isActive = layer.feature.properties.uv === feature.properties.uv;
+      layer.setStyle({
+        weight: isActive ? 3 : 1,
+        color: isActive ? '#3dd68c' : '#2a3548'
+      });
+    });
+  }
+  
+  showUVDetail(feature);
+}
+
+// Mostrar detalle de UV
+function showUVDetail(feature) {
+  const props = feature.properties;
+  const candConfig = CANDIDATOS[currentCandidato];
+  
+  document.getElementById('p-uv-num').textContent = `UV ${props.uv}`;
+  document.getElementById('p-uv-name').textContent = props.nombre;
+  
+  const candField = candConfig.campo;
+  const uvRaw = uvData[props.uv.toString()] || {};
+  const votosCand = uvRaw[candField] || 0;
+  const votosTotales = uvRaw.votos_totales || 0;
+  const inscritos = uvRaw.inscritos || 0;
+  const participacion = votosTotales > 0 && inscritos > 0 ? (votosTotales / inscritos) * 100 : 0;
+  
+  // Top otros candidatos
+  const dip_c = uvRaw.dip_c || [];
+  const topCands = dip_c.slice(0, 5);
+  
+  let html = `
+    <div class="section-title">Votos ${candConfig.nombre}</div>
+    <div class="stat-grid">
+      <div class="stat-card wide">
+        <div class="stat-label">Votos obtenidos</div>
+        <div class="stat-value">${votosCand.toLocaleString()}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">% sobre válidos</div>
+        <div class="stat-value">${props.pct.toFixed(1)}<span class="stat-unit">%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Participación</div>
+        <div class="stat-value">${participacion.toFixed(1)}<span class="stat-unit">%</span></div>
+      </div>
+    </div>
+    
+    <div class="section-title">Top 5 Candidatos en esta UV</div>
+  `;
+  
+  topCands.forEach(c => {
+    const maxPct = Math.max(...topCands.map(x => x.pct));
+    const width = (c.pct / maxPct) * 100;
+    html += `
+      <div class="elec-bar-row">
+        <div class="elec-dot" style="background:${candConfig.color}"></div>
+        <div class="elec-name">${c.n}</div>
+        <div class="elec-track"><div class="elec-fill" style="width:${width}%;background:${candConfig.color}"></div></div>
+        <div class="elec-pct">${c.pct}%</div>
+      </div>
+    `;
+  });
+  
+  document.getElementById('panel-body').innerHTML = html;
+}
+
+// Renderizar lista de UVs
+function renderUVList() {
+  const list = document.getElementById('uv-list');
+  const candConfig = CANDIDATOS[currentCandidato];
+  const candField = candConfig.campo;
+  
+  // Ordenar por votos del candidato
+  const sorted = Object.entries(uvData)
+    .map(([id, data]) => ({id, ...data}))
+    .sort((a, b) => (b[candField] || 0) - (a[candField] || 0));
+  
+  let html = '';
+  sorted.forEach(uv => {
+    const votos = uv[candField] || 0;
+    const votosTotales = uv.votos_totales || 1;
+    const pct = votos > 0 ? (votos / votosTotales) * 100 : 0;
+    html += `
+      <div class="uv-item" data-uv="${uv.id}" onclick="selectUVById(${uv.id})">
+        <div class="uv-num">${uv.id}</div>
+        <div class="uv-name">${uv.nombre || `UV ${uv.id}`}</div>
+        <div class="uv-pct">${pct.toFixed(1)}%</div>
+      </div>
+    `;
+  });
+  
+  list.innerHTML = html;
+}
+
+// Filtrar UVs
+function filterUVs() {
+  const query = document.getElementById('uv-search').value.toLowerCase();
+  document.querySelectorAll('.uv-item').forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(query) ? 'flex' : 'none';
+  });
+}
+
+// Seleccionar UV por ID
+function selectUVById(id) {
+  if (uvLayer) {
+    uvLayer.eachLayer(layer => {
+      if (layer.feature.properties.uv === id) {
+        selectUV(layer.feature);
+        map.fitBounds(layer.getBounds(), {padding: [50, 50]});
+      }
+    });
+  }
+}
+
+// Toggle panel
+function togglePanel() {
+  const panel = document.getElementById('panel');
+  const toggle = panel.querySelector('.panel-toggle');
+  panel.classList.toggle('collapsed');
+  toggle.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+}
+
+// Iniciar
+initMap();
+</script>
+</body>
+</html>
