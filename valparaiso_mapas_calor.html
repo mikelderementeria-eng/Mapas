@@ -1,508 +1,473 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Mapas de Calor · Candidatos Diputados Valparaíso</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0e1117;--bg2:#161b24;--bg3:#1d2433;--bg4:#242d3e;
-  --border:#2a3548;--border2:#3a4a63;
-  --text1:#e8edf5;--text2:#a8b8d0;--text3:#6a7f9a;
-  --accent:#3dd68c;--accent2:#2ab57a;--accent3:rgba(61,214,140,.12);
-  --cuello:#ef4444;--sharp:#22c55e;--brito:#ef4444;--valenzuela:#eab308;
-  --panel-w:320px;
-}
-body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text1);height:100vh;display:flex;flex-direction:column;overflow:hidden}
-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 18px;height:48px;display:flex;align-items:center;gap:14px;flex-shrink:0}
-.hdr-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
-.hdr-sub{font-size:10px;color:var(--text3);letter-spacing:.06em}
-.hdr-divider{width:1px;height:18px;background:var(--border2)}
-.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.btn-hdr{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:5px 11px;cursor:pointer;transition:all .15s;letter-spacing:.04em;text-transform:uppercase}
-.btn-hdr:hover{background:var(--bg4);color:var(--text1);border-color:var(--border2)}
-.btn-hdr.on{background:var(--accent3);color:var(--accent);border-color:var(--accent2)}
-.main{display:flex;flex:1;overflow:hidden}
-#map{flex:1;position:relative}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapas de Calor - Candidatos Valparaíso</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        
+        /* Layout Principal */
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
 
-/* ── PANEL CANDIDATOS ────────────────────────────────── */
-.cand-panel{position:absolute;top:12px;right:14px;z-index:400;width:220px;background:rgba(14,17,23,.95);border:1px solid var(--border2);border-radius:5px;backdrop-filter:blur(8px);overflow:hidden}
-.cp-title{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;padding:10px 12px;border-bottom:1px solid var(--border)}
-.cp-cand{display:block;width:100%;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);background:none;border:none;border-left:3px solid transparent;padding:8px 12px;cursor:pointer;transition:all .12s;letter-spacing:.03em}
-.cp-cand:hover{background:rgba(255,255,255,.04);color:var(--text2)}
-.cp-cand.on{color:var(--text1);background:rgba(255,255,255,.06)}
-.cp-cand .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
-.cp-cand .name{font-weight:600}
-.cp-cand .party{font-size:8px;color:var(--text3);display:block;margin-top:2px}
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
 
-/* ── LEYENDA ─────────────────────────────────────── */
-.map-legend{position:absolute;bottom:32px;left:16px;z-index:400;background:rgba(14,17,23,.92);border:1px solid var(--border2);border-radius:4px;padding:11px 13px;min-width:200px;backdrop-filter:blur(8px);display:none}
-.legend-title{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px}
-.legend-gradient{height:8px;border-radius:2px;margin-bottom:3px}
-.legend-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3)}
-.legend-info{font-size:9px;color:var(--text3);margin-top:5px;line-height:1.4}
+        /* Panel Lateral Mejorado */
+        #sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 380px;
+            height: 100%;
+            background: white;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.2);
+            z-index: 1000; /* Muy alto para estar siempre sobre el mapa */
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
 
-/* ── PANEL DERECHO ──────────────────────────────── */
-.panel{width:var(--panel-w);background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:width .2s ease;position:relative;min-height:0}
-.panel.collapsed{width:0;border-left:none}
-.panel-toggle{position:absolute;top:50%;left:-13px;transform:translateY(-50%);z-index:450;width:13px;height:40px;background:var(--bg3);border:1px solid var(--border2);border-right:none;border-radius:3px 0 0 3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:9px;transition:background .15s}
-.panel-toggle:hover{background:var(--bg4);color:var(--text1)}
-.panel-head{background:var(--bg3);border-bottom:1px solid var(--border);padding:14px 16px 12px;flex-shrink:0}
-.panel-uv-label{font-size:8px;color:var(--text3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
-.panel-uv-num{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent);line-height:1}
-.panel-uv-name{font-size:11px;color:var(--text2);margin-top:2px;font-weight:500}
-.panel-cand-badge{font-size:8px;color:var(--accent);background:var(--bg4);border:1px solid var(--border);border-radius:2px;padding:2px 7px;margin-top:6px;display:inline-block}
-.panel-body{flex:1;overflow-y:auto;padding:14px 14px 20px;min-height:0}
-.panel-body::-webkit-scrollbar{width:4px}
-.panel-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+        .sidebar-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
 
-.section-title{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;color:var(--accent);letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:10px;margin-top:14px}
-.section-title:first-child{margin-top:0}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
-.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:8px 10px}
-.stat-card.wide{grid-column:1/-1}
-.stat-label{font-size:8px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
-.stat-value{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text1);line-height:1}
-.stat-value.sm{font-size:13px}
-.stat-unit{font-size:9px;color:var(--text3);margin-left:2px}
+        .sidebar-header h2 { margin: 0 0 10px 0; font-size: 1.4rem; }
+        .sidebar-header p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
 
-.elec-bar-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
-.elec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.elec-name{font-size:9px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.elec-track{width:80px;height:5px;background:var(--bg4);border-radius:2px;overflow:hidden;flex-shrink:0}
-.elec-fill{height:100%;border-radius:2px;transition:width .45s ease}
-.elec-pct{font-size:9px;color:var(--text2);width:28px;text-align:right;flex-shrink:0;font-weight:500}
+        .candidate-selector {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            flex-shrink: 0;
+        }
 
-.uv-list-container{flex:1;overflow-y:auto}
-.uv-list-container::-webkit-scrollbar{width:4px}
-.uv-list-container::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.uv-search{padding:10px 12px;background:var(--bg3);border-bottom:1px solid var(--border);flex-shrink:0}
-.uv-search input{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:2px;padding:6px 9px;color:var(--text1);font-family:'IBM Plex Mono',monospace;font-size:10px;outline:none;transition:border .15s}
-.uv-search input:focus{border-color:var(--accent2)}
-.uv-item{padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;display:flex;align-items:center;gap:8px}
-.uv-item:hover{background:var(--bg3)}
-.uv-item.active{background:rgba(61,214,140,.07);border-left:2px solid var(--accent)}
-.uv-num{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--accent);min-width:32px;flex-shrink:0}
-.uv-name{font-size:10px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.uv-pct{font-size:9px;color:var(--text3);flex-shrink:0;font-weight:500}
-.no-data{padding:24px 16px;text-align:center;font-size:11px;color:var(--text3);line-height:1.6}
+        .candidate-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: left;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
 
-/* Colores candidatos */
-.cand-cuello{--cand-color:var(--cuello)}
-.cand-sharp{--cand-color:var(--sharp)}
-.cand-brito{--cand-color:var(--brito)}
-.cand-valenzuela{--cand-color:var(--valenzuela)}
-</style>
+        .candidate-btn:hover { background: #f0f0f0; border-color: #bbb; }
+        
+        .candidate-btn.active {
+            border-color: #2c3e50;
+            background: #eef2f5;
+            transform: translateX(5px);
+        }
+
+        .candidate-party {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: normal;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* Área de Estadísticas */
+        #stats-area {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .uv-info {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .uv-title { font-size: 1.1rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .uv-subtitle { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 15px; }
+
+        .results-list { list-style: none; padding: 0; margin: 0; }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .result-item:last-child { border-bottom: none; }
+        
+        .cand-name { font-size: 0.9rem; font-weight: 500; }
+        .cand-pct { font-weight: bold; font-size: 0.95rem; }
+        
+        .winner-badge {
+            background: #27ae60;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+            text-transform: uppercase;
+        }
+
+        /* Leyenda Visual */
+        .legend-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        .legend-title { font-weight: bold; margin-bottom: 8px; display: block; }
+        .gradient-bar {
+            height: 10px;
+            background: linear-gradient(to right, rgba(235, 235, 235, 0.2), rgba(44, 62, 80, 1));
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        .legend-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #666; }
+
+        /* Botón Volver */
+        .back-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #e74c3c;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        .back-btn:hover { background: #c0392b; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            #sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 45vh;
+                bottom: 0;
+                top: auto;
+                box-shadow: 0 -2px 15px rgba(0,0,0,0.2);
+            }
+            .candidate-selector { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; }
+            .candidate-btn { min-width: 140px; margin-bottom: 0; }
+        }
+    </style>
 </head>
 <body>
-<header>
-  <div>
-    <div class="hdr-title">Mapas de Calor · Candidatos</div>
-    <div class="hdr-sub">Luis Cuello · Jorge Sharp · Jorge Brito · Juan Manuel Valenzuela</div>
-  </div>
-  <div class="hdr-divider"></div>
-  <div class="hdr-right">
-    <button class="btn-hdr" id="btn-completo" onclick="window.location.href='valparaiso_perfil_completo.html'">← Mapa Completo</button>
-  </div>
-</header>
 
-<div class="main">
-  <div id="map">
-    
-    <!-- Panel Candidatos -->
-    <div class="cand-panel">
-      <div class="cp-title">Seleccionar Candidato</div>
-      <button class="cp-cand on" data-cand="cuello" onclick="setCandidato('cuello')">
-        <span class="dot" style="background:var(--cuello)"></span>
-        <span class="name">Luis Cuello</span>
-        <span class="party">PC · Unidad por Chile</span>
-      </button>
-      <button class="cp-cand" data-cand="sharp" onclick="setCandidato('sharp')">
-        <span class="dot" style="background:var(--sharp)"></span>
-        <span class="name">Jorge Sharp</span>
-        <span class="party">VRyH</span>
-      </button>
-      <button class="cp-cand" data-cand="brito" onclick="setCandidato('brito')">
-        <span class="dot" style="background:var(--brito)"></span>
-        <span class="name">Jorge Brito</span>
-        <span class="party">FA · Unidad por Chile</span>
-      </button>
-      <button class="cp-cand" data-cand="valenzuela" onclick="setCandidato('valenzuela')">
-        <span class="dot" style="background:var(--valenzuela)"></span>
-        <span class="name">Juan M. Valenzuela</span>
-        <span class="party">PDG</span>
-      </button>
+<div id="container">
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>Mapas de Calor</h2>
+            <p>Resultados por Unidad Vecinal</p>
+        </div>
+
+        <div class="candidate-selector">
+            <!-- Se llena dinámicamente -->
+        </div>
+
+        <div id="stats-area">
+            <div class="uv-info" id="uv-detail" style="display:none;">
+                <div class="uv-title" id="detail-uv-name">UV Nombre</div>
+                <div class="uv-subtitle" id="detail-uv-code">Código: ---</div>
+                <ul class="results-list" id="detail-results"></ul>
+            </div>
+
+            <div class="legend-box">
+                <span class="legend-title">Intensidad del Color</span>
+                <div class="gradient-bar"></div>
+                <div class="legend-labels">
+                    <span>0%</span>
+                    <span>Alto %</span>
+                </div>
+                <p style="margin-top:10px; font-size:0.8rem; color:#555;">
+                    * El color representa el porcentaje de votos obtenido por el candidato seleccionado en esa unidad vecinal.
+                </p>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="index.html" class="back-btn">← Volver al Inicio</a>
+            </div>
+        </div>
     </div>
 
-    <!-- Leyenda -->
-    <div class="map-legend" id="legend">
-      <div class="legend-title">% Votos por UV</div>
-      <div class="legend-gradient" id="legend-gradient"></div>
-      <div class="legend-labels"><span>0%</span><span>15%</span></div>
-      <div class="legend-info" id="legend-info">Porcentaje de votos sobre total emitidos en la UV</div>
-    </div>
-
-  </div>
-
-  <!-- Panel Derecho -->
-  <div class="panel" id="panel">
-    <div class="panel-toggle" onclick="togglePanel()">◀</div>
-    <div class="panel-head">
-      <div class="panel-uv-label">Unidad Vecinal</div>
-      <div class="panel-uv-num" id="p-uv-num">—</div>
-      <div class="panel-uv-name" id="p-uv-name">Selecciona una UV</div>
-      <div class="panel-cand-badge" id="p-cand-badge">Luis Cuello</div>
-    </div>
-    <div class="panel-body" id="panel-body">
-      <div class="no-data">Haz clic en una unidad vecinal para ver el detalle de votos</div>
-    </div>
-    <div class="uv-search">
-      <input type="text" placeholder="Buscar UV por nombre o número..." id="uv-search" onkeyup="filterUVs()"/>
-    </div>
-    <div class="uv-list-container" id="uv-list"></div>
-  </div>
+    <div id="map"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-// Configuración de candidatos
-const CANDIDATOS = {
-  cuello: { 
-    nombre: "Luis Cuello", 
-    partido: "PC · Unidad por Chile", 
-    color: "#ef4444",
-    campo: "dc_Cuello"
-  },
-  sharp: { 
-    nombre: "Jorge Sharp", 
-    partido: "VRyH", 
-    color: "#22c55e",
-    campo: "dc_Sharp"
-  },
-  brito: { 
-    nombre: "Jorge Brito", 
-    partido: "FA · Unidad por Chile", 
-    color: "#ef4444",
-    campo: "dc_Brito"
-  },
-  valenzuela: { 
-    nombre: "Juan M. Valenzuela", 
-    partido: "PDG", 
-    color: "#eab308",
-    campo: "dc_Valenzuela"
-  }
-};
+    // Configuración Inicial
+    let map;
+    let geojsonLayer;
+    let currentCandidate = null;
+    let candidatesData = [];
+    let uvData = {}; // Mapa de datos por UV
 
-let map, uvLayer, currentCandidato = 'cuello';
-let uvData = {};
-let geojsonUVs = null;
-let selectedUV = null;
+    // Colores base para los candidatos (para identificarlos en listas)
+    const candidateColors = {
+        'Luis Cuello': '#e74c3c', // Rojo
+        'Jorge Sharp': '#f39c12', // Naranja
+        'Jorge Brito': '#27ae60', // Verde
+        'Juan Manuel Valenzuela': '#3498db' // Azul
+    };
 
-// Inicializar mapa
-function initMap() {
-  map = L.map('map').setView([-33.035, -71.615], 13);
-  
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '©OpenStreetMap ©CartoDB',
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(map);
+    // Inicializar Mapa
+    function initMap() {
+        map = L.map('map').setView([-33.047, -71.612], 13); // Centro Valparaíso
 
-  cargarDatos();
-}
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+    }
 
-// Cargar datos desde JSON
-async function cargarDatos() {
-  try {
-    // Cargar datos electorales de candidatos
-    const response = await fetch('data/datos_candidatos.json');
-    uvData = await response.json();
-    
-    // Cargar GeoJSON con geometrías
-    const geoResponse = await fetch('data/uv_valparaiso.geojson');
-    geojsonUVs = await geoResponse.json();
-    
-    renderUVLayer();
-    renderUVList();
-    updateLegend();
-  } catch (error) {
-    console.error('Error cargando datos:', error);
-    document.getElementById('panel-body').innerHTML = '<div class="no-data">Error cargando datos. Verifica que existan los archivos data/datos_candidatos.json y data/uv_valparaiso.geojson</div>';
-  }
-}
+    // Cargar Datos
+    async function loadData() {
+        try {
+            // Cargar resultados
+            const response = await fetch('data/datos_candidatos.json');
+            const data = await response.json();
+            
+            // Procesar datos para facilitar búsqueda
+            // Asumimos estructura: [{ uv: "1", codigo_uv": "...", "Luis Cuello": 15, "Jorge Sharp": 10... }, ...]
+            // O estructura anidada. Ajustaremos según lo que cargue realmente.
+            
+            // Normalización de datos
+            data.forEach(uv => {
+                const key = uv.codigo_uv || uv.uv; // Usar código o nombre como key
+                uvData[key] = uv;
+            });
 
-// Renderizar capa de UVs
-function renderUVLayer() {
-  if (uvLayer) map.removeLayer(uvLayer);
-  
-  const candConfig = CANDIDATOS[currentCandidato];
-  const campo = candConfig.campo;
-  
-  // Si tenemos GeoJSON externo, usarlo
-  if (geojsonUVs && geojsonUVs.features && geojsonUVs.features.length > 0) {
-    renderUVLayerFromGeoJSON(geojsonUVs, campo, candConfig);
-  } else {
-    // Fallback: usar geometrías aproximadas
-    renderUVLayerFallback(campo, candConfig);
-  }
-}
+            // Extraer lista única de candidatos (excluyendo campos técnicos)
+            const excludeKeys = ['uv', 'codigo_uv', 'nombre_uv', 'distrito', 'comuna'];
+            if (data.length > 0) {
+                const firstRow = data[0];
+                candidatesData = Object.keys(firstRow).filter(k => !excludeKeys.includes(k));
+            }
 
-function renderUVLayerFromGeoJSON(geojson, campo, candConfig) {
-  uvLayer = L.geoJSON(geojson, {
-    style: feature => {
-      const uvId = feature.properties.UV || feature.properties.uv || feature.properties.id;
-      const uv = uvData[uvId.toString()] || {};
-      // Los datos ya vienen en porcentaje (0-15), usar directamente
-      const pct = uv[campo] || 0;
-      
-      return {
-        fillColor: candConfig.color,
-        color: '#2a3548',
-        weight: 1,
-        fillOpacity: Math.min(0.3 + (pct / 15) * 0.7, 0.95)
-      };
-    },
-    onEachFeature: (feature, layer) => {
-      const uvId = feature.properties.UV || feature.properties.uv || feature.properties.id;
-      const uv = uvData[uvId.toString()] || {};
-      // Los datos ya vienen en porcentaje
-      const pct = uv[campo] || 0;
-      const votosTotales = uv.votos_totales || 1;
-      // Calcular votos absolutos desde el porcentaje
-      const votosCand = votosTotales > 0 ? Math.round((pct / 100) * votosTotales) : 0;
-      const nombre = feature.properties.Nombre || feature.properties.nombre || `UV ${uvId}`;
-      
-      layer.on('click', () => {
-        selectUV({
-          properties: {
-            uv: parseInt(uvId),
-            nombre: nombre,
-            pct: pct,
-            votos: votosCand,
-            votos_totales: votosTotales,
-            inscritos: uv.inscritos || 0
-          }
+            renderCandidateSelector();
+            loadGeoJSON();
+
+        } catch (error) {
+            console.error("Error cargando datos:", error);
+            document.querySelector('.candidate-selector').innerHTML = '<p style="padding:15px; color:red;">Error al cargar datos. Verifique la consola.</p>';
+        }
+    }
+
+    // Renderizar Botones de Candidatos
+    function renderCandidateSelector() {
+        const container = document.querySelector('.candidate-selector');
+        container.innerHTML = '';
+
+        candidatesData.forEach(cand => {
+            const btn = document.createElement('button');
+            btn.className = 'candidate-btn';
+            btn.innerHTML = `${cand} <span class="candidate-party">Ver mapa de calor</span>`;
+            btn.onclick = () => selectCandidate(cand, btn);
+            container.appendChild(btn);
         });
-      });
-      
-      layer.bindTooltip(`<b>${nombre}</b><br>${pct.toFixed(1)}%`, {
-        sticky: true,
-        direction: 'top'
-      });
+
+        // Seleccionar el primero por defecto
+        if (candidatesData.length > 0) {
+            selectCandidate(candidatesData[0], container.firstChild);
+        }
     }
-  }).addTo(map);
-}
 
-function renderUVLayerFallback(campo, candConfig) {
-  const geojsonFeatures = [];
-  
-  Object.keys(uvData).forEach(uvId => {
-    const uv = uvData[uvId];
-    // Los datos ya vienen en porcentaje (0-15)
-    const pct = uv[campo] || 0;
-    const inscritos = uv.inscritos || 0;
-    const votosTotales = uv.votos_totales || 0;
-    // Calcular votos absolutos desde el porcentaje
-    const votosCand = votosTotales > 0 ? Math.round((pct / 100) * votosTotales) : 0;
-    
-    const numId = parseInt(uvId);
-    geojsonFeatures.push({
-      type: 'Feature',
-      properties: {
-        uv: numId,
-        nombre: uv.nombre || `UV ${uvId}`,
-        pct: pct,
-        votos: votosCand,
-        votos_totales: votosTotales,
-        inscritos: inscritos
-      },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [-71.62 + (numId % 10) * 0.01, -33.03 + Math.floor(numId / 10) * 0.01],
-          [-71.62 + (numId % 10) * 0.01 + 0.005, -33.03 + Math.floor(numId / 10) * 0.01],
-          [-71.62 + (numId % 10) * 0.01 + 0.005, -33.03 + Math.floor(numId / 10) * 0.01 + 0.005],
-          [-71.62 + (numId % 10) * 0.01, -33.03 + Math.floor(numId / 10) * 0.01 + 0.005],
-          [-71.62 + (numId % 10) * 0.01, -33.03 + Math.floor(numId / 10) * 0.01]
-        ]]
-      }
-    });
-  });
-  
-  uvLayer = L.geoJSON({type: 'FeatureCollection', features: geojsonFeatures}, {
-    style: feature => ({
-      fillColor: candConfig.color,
-      color: '#2a3548',
-      weight: 1,
-      fillOpacity: Math.min(0.3 + (feature.properties.pct / 15) * 0.7, 0.95)
-    }),
-    onEachFeature: (feature, layer) => {
-      layer.on('click', () => selectUV(feature));
-      layer.bindTooltip(`<b>${feature.properties.nombre}</b><br>${feature.properties.pct.toFixed(1)}%`, {
-        sticky: true,
-        direction: 'top'
-      });
+    // Seleccionar Candidato
+    function selectCandidate(candName, btnElement) {
+        currentCandidate = candName;
+
+        // Actualizar UI botones
+        document.querySelectorAll('.candidate-btn').forEach(b => b.classList.remove('active'));
+        if(btnElement) btnElement.classList.add('active');
+
+        // Actualizar Mapa
+        updateMapColors();
+        
+        // Resetear panel lateral si hay una UV seleccionada
+        const selectedUV = document.getElementById('uv-detail');
+        if (selectedUV.style.display === 'block') {
+            // Recalcular datos para la UV actualmente visible con el nuevo candidato
+            // (La lógica de click en polígono se encarga de esto, pero forzamos refresh si es necesario)
+        } else {
+            document.getElementById('detail-uv-name').innerText = "Selecciona una unidad en el mapa";
+            document.getElementById('detail-uv-code').innerText = "";
+            document.getElementById('detail-results').innerHTML = "";
+        }
     }
-  }).addTo(map);
-}
 
-// Actualizar leyenda
-function updateLegend() {
-  const candConfig = CANDIDATOS[currentCandidato];
-  const gradient = document.getElementById('legend-gradient');
-  gradient.style.background = `linear-gradient(90deg, ${candConfig.color}22 0%, ${candConfig.color} 100%)`;
-  document.getElementById('legend').style.display = 'block';
-}
+    // Cargar GeoJSON
+    async function loadGeoJSON() {
+        try {
+            const response = await fetch('data/uv_valparaiso.geojson');
+            const geojson = await response.json();
 
-// Seleccionar candidato
-function setCandidato(cand) {
-  currentCandidato = cand;
-  
-  // Actualizar botones
-  document.querySelectorAll('.cp-cand').forEach(btn => {
-    btn.classList.toggle('on', btn.dataset.cand === cand);
-  });
-  
-  // Actualizar badge panel
-  const candConfig = CANDIDATOS[cand];
-  document.getElementById('p-cand-badge').textContent = candConfig.nombre;
-  
-  // Re-renderizar capa y lista
-  renderUVLayer();
-  renderUVList();
-  updateLegend();
-  
-  // Resetear selección
-  selectedUV = null;
-  document.getElementById('panel-body').innerHTML = '<div class="no-data">Haz clic en una unidad vecinal para ver el detalle de votos</div>';
-}
+            geojsonLayer = L.geoJSON(geojson, {
+                style: styleFeature,
+                onEachFeature: onEachFeature
+            }).addTo(map);
 
-// Seleccionar UV
-function selectUV(feature) {
-  selectedUV = feature;
-  
-  // Highlight
-  if (uvLayer) {
-    uvLayer.eachLayer(layer => {
-      const isActive = layer.feature.properties.uv === feature.properties.uv;
-      layer.setStyle({
-        weight: isActive ? 3 : 1,
-        color: isActive ? '#3dd68c' : '#2a3548'
-      });
-    });
-  }
-  
-  showUVDetail(feature);
-}
+            // Ajustar vista
+            map.fitBounds(geojsonLayer.getBounds(), { padding: [50, 50] });
 
-// Mostrar detalle de UV
-function showUVDetail(feature) {
-  const props = feature.properties;
-  const candConfig = CANDIDATOS[currentCandidato];
-  
-  document.getElementById('p-uv-num').textContent = `UV ${props.uv}`;
-  document.getElementById('p-uv-name').textContent = props.nombre;
-  
-  const candField = candConfig.campo;
-  const uvRaw = uvData[props.uv.toString()] || {};
-  const votosCand = uvRaw[candField] || 0;
-  const votosTotales = uvRaw.votos_totales || 0;
-  const inscritos = uvRaw.inscritos || 0;
-  const participacion = votosTotales > 0 && inscritos > 0 ? (votosTotales / inscritos) * 100 : 0;
-  
-  let html = `
-    <div class="section-title">Votos ${candConfig.nombre}</div>
-    <div class="stat-grid">
-      <div class="stat-card wide">
-        <div class="stat-label">Votos obtenidos</div>
-        <div class="stat-value">${votosCand.toLocaleString()}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">% sobre válidos</div>
-        <div class="stat-value">${props.pct.toFixed(1)}<span class="stat-unit">%</span></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Participación</div>
-        <div class="stat-value">${participacion.toFixed(1)}<span class="stat-unit">%</span></div>
-      </div>
-    </div>
-    
-    <div class="section-title">Información UV</div>
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-label">Inscritos</div>
-        <div class="stat-value sm">${inscritos.toLocaleString()}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Votos totales</div>
-        <div class="stat-value sm">${votosTotales.toLocaleString()}</div>
-      </div>
-    </div>
-  `;
-  
-  document.getElementById('panel-body').innerHTML = html;
-}
+        } catch (error) {
+            console.error("Error cargando GeoJSON:", error);
+        }
+    }
 
-// Renderizar lista de UVs
-function renderUVList() {
-  const list = document.getElementById('uv-list');
-  const candConfig = CANDIDATOS[currentCandidato];
-  const candField = candConfig.campo;
-  
-  // Ordenar por porcentaje del candidato (los datos ya vienen en %)
-  const sorted = Object.entries(uvData)
-    .map(([id, data]) => ({id, ...data}))
-    .sort((a, b) => (b[candField] || 0) - (a[candField] || 0));
-  
-  let html = '';
-  sorted.forEach(uv => {
-    const pct = uv[candField] || 0;
-    html += `
-      <div class="uv-item" data-uv="${uv.id}" onclick="selectUVById(${uv.id})">
-        <div class="uv-num">${uv.id}</div>
-        <div class="uv-name">${uv.nombre || `UV ${uv.id}`}</div>
-        <div class="uv-pct">${pct.toFixed(1)}%</div>
-      </div>
-    `;
-  });
-  
-  list.innerHTML = html;
-}
+    // Estilo Dinámico según Candidato
+    function styleFeature(feature) {
+        const uvCode = feature.properties.codigo_uv || feature.properties.name; // Ajustar según propiedad real
+        const data = uvData[uvCode];
+        
+        let value = 0;
+        if (data && currentCandidate && data[currentCandidate] !== undefined) {
+            value = parseFloat(data[currentCandidate]);
+        }
 
-// Filtrar UVs
-function filterUVs() {
-  const query = document.getElementById('uv-search').value.toLowerCase();
-  document.querySelectorAll('.uv-item').forEach(item => {
-    const text = item.textContent.toLowerCase();
-    item.style.display = text.includes(query) ? 'flex' : 'none';
-  });
-}
+        // Lógica de Color Mejorada
+        // Opacidad base baja, sube con el porcentaje
+        // Color base del candidato actual
+        
+        let opacity = 0.1; // Base muy suave
+        let color = '#999'; // Gris por defecto si no hay dato
 
-// Seleccionar UV por ID
-function selectUVById(id) {
-  if (uvLayer) {
-    uvLayer.eachLayer(layer => {
-      if (layer.feature.properties.uv === id) {
-        selectUV(layer.feature);
-        map.fitBounds(layer.getBounds(), {padding: [50, 50]});
-      }
-    });
-  }
-}
+        if (currentCandidate && value > 0) {
+            // Asignar color del candidato
+            color = candidateColors[currentCandidate] || '#3498db';
+            
+            // Escala de opacidad no lineal para resaltar diferencias
+            if (value < 2) opacity = 0.15;
+            else if (value < 5) opacity = 0.35;
+            else if (value < 10) opacity = 0.6;
+            else if (value < 15) opacity = 0.8;
+            else opacity = 0.95; // Máxima intensidad
+        }
 
-// Toggle panel
-function togglePanel() {
-  const panel = document.getElementById('panel');
-  const toggle = panel.querySelector('.panel-toggle');
-  panel.classList.toggle('collapsed');
-  toggle.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
-}
+        return {
+            fillColor: color,
+            weight: 1,
+            opacity: 1,
+            color: 'white', // Borde blanco para separar UVs
+            dashArray: '',
+            fillOpacity: opacity
+        };
+    }
 
-// Iniciar
-initMap();
+    // Interacción con Features
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight,
+            click: zoomToFeature
+        });
+    }
+
+    function highlightFeature(e) {
+        const layer = e.target;
+        layer.setStyle({
+            weight: 3,
+            color: '#333',
+            dashArray: '',
+            fillOpacity: 0.9 // Aumentar opacidad al pasar el mouse
+        });
+        layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+        geojsonLayer.resetStyle(e.target);
+    }
+
+    function zoomToFeature(e) {
+        const layer = e.target;
+        const properties = layer.feature.properties;
+        
+        // Zoom suave
+        map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 16 });
+
+        showStats(properties);
+    }
+
+    // Mostrar Estadísticas en Panel
+    function showStats(props) {
+        const uvCode = props.codigo_uv || props.name;
+        const data = uvData[uvCode];
+        const detailPanel = document.getElementById('uv-detail');
+        
+        if (!data) {
+            detailPanel.style.display = 'none';
+            return;
+        }
+
+        detailPanel.style.display = 'block';
+        document.getElementById('detail-uv-name').innerText = props.nombre_uv || props.name || "Unidad Vecinal";
+        document.getElementById('detail-uv-code').innerText = `Código: ${uvCode}`;
+
+        const list = document.getElementById('detail-results');
+        list.innerHTML = '';
+
+        // Ordenar candidatos por votos en esta UV
+        const results = candidatesData.map(cand => {
+            return {
+                name: cand,
+                votes: parseFloat(data[cand]) || 0
+            };
+        }).sort((a, b) => b.votes - a.votes);
+
+        results.forEach((res, index) => {
+            const li = document.createElement('li');
+            li.className = 'result-item';
+            
+            const isWinner = index === 0;
+            const winnerBadge = isWinner ? '<span class="winner-badge">Ganador</span>' : '';
+            const colorDot = `<span style="display:inline-block;width:10px;height:10px;background:${candidateColors[res.name]||'#ccc'};border-radius:50%;margin-right:8px;"></span>`;
+
+            li.innerHTML = `
+                <div style="display:flex;align-items:center;">${colorDot}<span class="cand-name">${res.name} ${winnerBadge}</span></div>
+                <span class="cand-pct" style="color:${isWinner ? '#27ae60' : '#333'}">${res.votes.toFixed(2)}%</span>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    // Actualizar colores del mapa (cuando cambia candidato)
+    function updateMapColors() {
+        if (geojsonLayer) {
+            geojsonLayer.eachLayer(function(layer) {
+                geojsonLayer.resetStyle(layer);
+                // Re-aplicar estilo con nueva lógica
+                layer.setStyle(styleFeature(layer.feature));
+            });
+        }
+    }
+
+    // Iniciar
+    initMap();
+    loadData();
+
 </script>
 </body>
 </html>
