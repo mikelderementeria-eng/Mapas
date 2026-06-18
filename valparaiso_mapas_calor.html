@@ -224,6 +224,15 @@
     let currentCandidate = null;
     let candidatesData = [];
     let uvData = {}; // Mapa de datos por UV
+    let comunalTotals = {}; // Totales por candidato a nivel comunal
+
+    // Mapeo de claves del JSON a nombres mostrables
+    const candidateKeys = {
+        'dc_Cuello': 'Luis Cuello',
+        'dc_Sharp': 'Jorge Sharp',
+        'dc_Brito': 'Jorge Brito',
+        'dc_Valenzuela': 'Juan Manuel Valenzuela'
+    };
 
     // Colores base para los candidatos (para identificarlos en listas)
     const candidateColors = {
@@ -252,21 +261,41 @@
             const data = await response.json();
             
             // Procesar datos para facilitar búsqueda
-            // Asumimos estructura: [{ uv: "1", codigo_uv": "...", "Luis Cuello": 15, "Jorge Sharp": 10... }, ...]
-            // O estructura anidada. Ajustaremos según lo que cargue realmente.
+            // La estructura es: { "1": { uv: 1, nombre: "...", dc_Cuello: 7.5, ... }, ... }
+            
+            let totalVotosPorCandidato = {};
+            let totalVotosComuna = 0;
             
             // Normalización de datos
-            data.forEach(uv => {
-                const key = uv.codigo_uv || uv.uv; // Usar código o nombre como key
-                uvData[key] = uv;
-            });
-
-            // Extraer lista única de candidatos (excluyendo campos técnicos)
-            const excludeKeys = ['uv', 'codigo_uv', 'nombre_uv', 'distrito', 'comuna'];
-            if (data.length > 0) {
-                const firstRow = data[0];
-                candidatesData = Object.keys(firstRow).filter(k => !excludeKeys.includes(k));
+            for (const key in data) {
+                const uv = data[key];
+                const uvCode = uv.uv.toString();
+                uvData[uvCode] = uv;
+                
+                // Calcular totales comunales
+                for (const candKey in candidateKeys) {
+                    if (uv[candKey] !== undefined) {
+                        const votos = parseFloat(uv[candKey]) || 0;
+                        if (!totalVotosPorCandidato[candKey]) {
+                            totalVotosPorCandidato[candKey] = 0;
+                        }
+                        totalVotosPorCandidato[candKey] += votos;
+                        totalVotosComuna += votos;
+                    }
+                }
             }
+            
+            // Calcular porcentajes comunales
+            for (const candKey in candidateKeys) {
+                if (totalVotosPorCandidato[candKey] && totalVotosComuna > 0) {
+                    comunalTotals[candidateKeys[candKey]] = (totalVotosPorCandidato[candKey] / totalVotosComuna) * 100;
+                } else {
+                    comunalTotals[candidateKeys[candKey]] = 0;
+                }
+            }
+
+            // Extraer lista única de candidatos (nombres mostrables)
+            candidatesData = Object.values(candidateKeys);
 
             renderCandidateSelector();
             loadGeoJSON();
@@ -285,7 +314,8 @@
         candidatesData.forEach(cand => {
             const btn = document.createElement('button');
             btn.className = 'candidate-btn';
-            btn.innerHTML = `${cand} <span class="candidate-party">Ver mapa de calor</span>`;
+            const comunalPct = comunalTotals[cand] ? comunalTotals[cand].toFixed(2) : 0;
+            btn.innerHTML = `${cand} <span class="candidate-party">${comunalPct}% en toda la comuna</span>`;
             btn.onclick = () => selectCandidate(cand, btn);
             container.appendChild(btn);
         });
@@ -307,16 +337,52 @@
         // Actualizar Mapa
         updateMapColors();
         
-        // Resetear panel lateral si hay una UV seleccionada
-        const selectedUV = document.getElementById('uv-detail');
-        if (selectedUV.style.display === 'block') {
-            // Recalcular datos para la UV actualmente visible con el nuevo candidato
-            // (La lógica de click en polígono se encarga de esto, pero forzamos refresh si es necesario)
-        } else {
-            document.getElementById('detail-uv-name').innerText = "Selecciona una unidad en el mapa";
-            document.getElementById('detail-uv-code').innerText = "";
-            document.getElementById('detail-results').innerHTML = "";
-        }
+        // Mostrar estadísticas comunales en el panel
+        showComunalStats();
+    }
+
+    // Mostrar estadísticas comunales cuando se selecciona un candidato
+    function showComunalStats() {
+        const detailPanel = document.getElementById('uv-detail');
+        detailPanel.style.display = 'block';
+        
+        const comunalPct = comunalTotals[currentCandidate] ? comunalTotals[currentCandidate].toFixed(2) : 0;
+        
+        document.getElementById('detail-uv-name').innerText = `Total Comuna de Valparaíso`;
+        document.getElementById('detail-uv-code').innerText = `Porcentaje total: ${comunalPct}%`;
+        
+        const list = document.getElementById('detail-results');
+        list.innerHTML = '';
+        
+        // Mostrar todos los candidatos ordenados por porcentaje comunal
+        const results = candidatesData.map(cand => {
+            return {
+                name: cand,
+                votes: comunalTotals[cand] || 0
+            };
+        }).sort((a, b) => b.votes - a.votes);
+        
+        results.forEach((res, index) => {
+            const li = document.createElement('li');
+            li.className = 'result-item';
+            
+            const isCurrent = res.name === currentCandidate;
+            const isWinner = index === 0;
+            const winnerBadge = isWinner ? '<span class="winner-badge">1°</span>' : '';
+            const colorDot = `<span style="display:inline-block;width:10px;height:10px;background:${candidateColors[res.name]||'#ccc'};border-radius:50%;margin-right:8px;"></span>`;
+            
+            li.innerHTML = `
+                <div style="display:flex;align-items:center;">${colorDot}<span class="cand-name">${res.name} ${winnerBadge}</span></div>
+                <span class="cand-pct" style="color:${isCurrent ? '#e74c3c' : (isWinner ? '#27ae60' : '#333')}; font-weight:${isCurrent ? 'bold' : 'normal'}">${res.votes.toFixed(2)}%</span>
+            `;
+            list.appendChild(li);
+        });
+        
+        // Agregar nota informativa
+        const infoNote = document.createElement('p');
+        infoNote.style.cssText = 'margin-top:15px; font-size:0.85rem; color:#666; font-style:italic;';
+        infoNote.innerHTML = '👆 Haz clic en una Unidad Vecinal para ver el detalle local';
+        list.parentNode.appendChild(infoNote);
     }
 
     // Cargar GeoJSON
@@ -340,12 +406,22 @@
 
     // Estilo Dinámico según Candidato
     function styleFeature(feature) {
-        const uvCode = feature.properties.codigo_uv || feature.properties.name; // Ajustar según propiedad real
+        const uvCode = feature.properties.uv ? feature.properties.uv.toString() : (feature.properties.codigo_uv || feature.properties.name);
         const data = uvData[uvCode];
         
         let value = 0;
-        if (data && currentCandidate && data[currentCandidate] !== undefined) {
-            value = parseFloat(data[currentCandidate]);
+        if (data && currentCandidate) {
+            // Buscar la clave correspondiente en candidateKeys
+            let candKey = '';
+            for (const key in candidateKeys) {
+                if (candidateKeys[key] === currentCandidate) {
+                    candKey = key;
+                    break;
+                }
+            }
+            if (candKey && data[candKey] !== undefined) {
+                value = parseFloat(data[candKey]);
+            }
         }
 
         // Lógica de Color Mejorada
@@ -411,9 +487,9 @@
         showStats(properties);
     }
 
-    // Mostrar Estadísticas en Panel
+    // Mostrar Estadísticas en Panel (detalle por UV)
     function showStats(props) {
-        const uvCode = props.codigo_uv || props.name;
+        const uvCode = props.uv ? props.uv.toString() : (props.codigo_uv || props.name);
         const data = uvData[uvCode];
         const detailPanel = document.getElementById('uv-detail');
         
@@ -423,17 +499,25 @@
         }
 
         detailPanel.style.display = 'block';
-        document.getElementById('detail-uv-name').innerText = props.nombre_uv || props.name || "Unidad Vecinal";
-        document.getElementById('detail-uv-code').innerText = `Código: ${uvCode}`;
+        document.getElementById('detail-uv-name').innerText = props.nombre || props.nombre_uv || props.name || "Unidad Vecinal";
+        document.getElementById('detail-uv-code').innerText = `UV Código: ${uvCode}`;
 
         const list = document.getElementById('detail-results');
         list.innerHTML = '';
 
         // Ordenar candidatos por votos en esta UV
         const results = candidatesData.map(cand => {
+            // Buscar la clave correspondiente en candidateKeys
+            let candKey = '';
+            for (const key in candidateKeys) {
+                if (candidateKeys[key] === cand) {
+                    candKey = key;
+                    break;
+                }
+            }
             return {
                 name: cand,
-                votes: parseFloat(data[cand]) || 0
+                votes: data[candKey] ? parseFloat(data[candKey]) : 0
             };
         }).sort((a, b) => b.votes - a.votes);
 
@@ -451,6 +535,13 @@
             `;
             list.appendChild(li);
         });
+        
+        // Botón para volver a vista comunal
+        const backBtn = document.createElement('button');
+        backBtn.textContent = '← Volver a total comunal';
+        backBtn.style.cssText = 'margin-top:15px; padding:8px 12px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer; width:100%;';
+        backBtn.onclick = () => showComunalStats();
+        list.parentNode.appendChild(backBtn);
     }
 
     // Actualizar colores del mapa (cuando cambia candidato)
